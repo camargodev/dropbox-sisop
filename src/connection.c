@@ -329,6 +329,8 @@ int sendRemove(int socketDescriptor, char filename[]) {
 int sendDownload(int socketDescriptor, COMMAND_PACKAGE commandPackage) {
     USER *user = findUserFromSocket(socketDescriptor);
     char filename[USERNAME_LENGTH + 1 + FILENAME_LENGTH];
+    int n;
+    FILE *file;
     if (user == NULL) {
         perror("No user with the current socket");
     }
@@ -336,7 +338,10 @@ int sendDownload(int socketDescriptor, COMMAND_PACKAGE commandPackage) {
     strncpy(filename, (char *) &(user->username), USERNAME_LENGTH);
     strcat(filename, "/");
     strncat(filename, (char*) &(commandPackage.filename), FILENAME_LENGTH);
-    return sendFile(fopen(filename, "r"), socketDescriptor, (char*) commandPackage.filename);
+    file = fopen(filename, "r");
+    n = sendFile(file, socketDescriptor, (char *)commandPackage.filename);
+    fclose(file);
+    return n;
 }
 
 int sendSyncDir(int socketDescriptor) {
@@ -347,6 +352,7 @@ int sendSyncDir(int socketDescriptor) {
     NODE *current;
     char filename[USERNAME_LENGTH + 1 + FILENAME_LENGTH];
     COMMAND_PACKAGE commandPackage;
+    FILE *file;
 
     user = findUserFromSocket(socketDescriptor);
     if (user == NULL){
@@ -364,8 +370,9 @@ int sendSyncDir(int socketDescriptor) {
         strncpy(filename, (char *) &(user->username), USERNAME_LENGTH);
         strcat(filename, "/");
         strncat(filename, fileInfo->filename, FILENAME_LENGTH);
-
-        sendFile(fopen(filename, "r"), socketDescriptor, (char*) fileInfo->filename);
+        file = fopen(filename, "r");
+        sendFile(file, socketDescriptor, (char *)fileInfo->filename);
+        fclose(file);
 
         current = current->next;
     }
